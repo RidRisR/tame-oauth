@@ -285,7 +285,7 @@ mod test {
     fn test_cache() {
         let cache = TokenCache::new();
         let hash = hash_scopes(&["scope1", "scope2"].iter());
-        let token = mock_token(100);
+        let token = mock_token(3600);
         let expired_token = mock_token(-100);
 
         assert!(matches!(
@@ -309,11 +309,25 @@ mod test {
     }
 
     #[test]
+    fn test_cache_refreshes_token_before_expiry() {
+        let cache = TokenCache::new();
+        let hash = hash_scopes(&["scope1", "scope2"].iter());
+        let almost_expired_token = mock_token(60);
+
+        cache.insert(almost_expired_token, hash).unwrap();
+
+        assert!(matches!(
+            cache.get(hash).unwrap(),
+            TokenOrRequestReason::RequestReason(RequestReason::Expired)
+        ));
+    }
+
+    #[test]
     fn test_cache_wrapper() {
         let cached_provider = CachedTokenProvider::wrap(PanicProvider);
 
         let hash = hash_scopes(&["scope1", "scope2"].iter());
-        let token = mock_token(100);
+        let token = mock_token(3600);
 
         cached_provider.access_tokens.insert(token, hash).unwrap();
 

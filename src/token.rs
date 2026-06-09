@@ -1,5 +1,7 @@
 use crate::{error::Error, token_cache::CacheableToken};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
+
+const ACCESS_TOKEN_REFRESH_WINDOW: Duration = Duration::from_secs(10 * 60);
 
 /// Represents a access token as returned by `OAuth2` servers.
 ///
@@ -37,7 +39,11 @@ impl CacheableToken for Token {
 
         let expiry = self.expires_in_timestamp.unwrap_or_else(SystemTime::now);
 
-        expiry <= SystemTime::now()
+        let refresh_deadline = SystemTime::now()
+            .checked_add(ACCESS_TOKEN_REFRESH_WINDOW)
+            .unwrap_or_else(SystemTime::now);
+
+        expiry <= refresh_deadline
     }
 }
 
